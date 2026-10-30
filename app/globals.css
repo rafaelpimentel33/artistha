@@ -1,0 +1,37 @@
+:root {
+  --fundo: #eef1ec;
+  --tinta: #26202b;
+  --suave: #5d5762;
+  --destaque: #2f6f7e;
+  --linha: #d3dacf;
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+body {
+  background: var(--fundo);
+  color: var(--tinta);
+  font-family: var(--font-texto), Georgia, serif;
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+a:focus-visible, button:focus-visible { outline: 3px solid var(--destaque); outline-offset: 3px; }
+
+.topo {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 1.5rem clamp(1rem, 5vw, 4rem);
+  border-bottom: 1px solid var(--linha);
+}
+.marca { font-family: var(--font-display), sans-serif; font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
+.topo p { color: var(--suave); font-size: 1rem; }
+
+.vitrine { padding: 3rem clamp(1rem, 5vw, 4rem); max-width: 1200px; margin: 0 auto; }
+.vitrine h1 { font-family: var(--font-display), sans-serif; font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1.05; letter-spacing: -0.03em; max-width: 14ch; margin-bottom: 2.5rem; }
+
+.grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2rem 1.5rem; }
+.peca img, .peca .sem-foto { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; background: var(--linha); display: block; }
+.peca h2 { font-family: var(--font-display), sans-serif; font-size: 1.15rem; font-weight: 600; margin-top: 0.75rem; }
+.peca .preco { color: var(--destaque); font-weight: 600; }
+
+.vazio { color: var(--suave); }
