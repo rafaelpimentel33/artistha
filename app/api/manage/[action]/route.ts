@@ -2,7 +2,7 @@ import { z } from "zod";
 import { getAdminAccess, storeAuthClient } from "../../../../lib/store-auth";
 import { MEDIA_BUCKET } from "../../../../lib/supabase-config";
 import { deletePlaqueReference, listPlaqueReferences, plaqueReferenceDownload } from "../../../../lib/plaque-reference-db";
-import { listOrders, readStoreConfig, writeConfig, writeOrderStatus, writeProduct } from "../../../../lib/store-db";
+import { deleteOrder, listOrders, readStoreConfig, writeConfig, writeOrderStatus, writeProduct } from "../../../../lib/store-db";
 import { error, fromStore, imageKind, json, readJson } from "../../../../lib/store-http";
 import { defaultPlaqueDesign, hasPlaquePreview, MAX_PHOTO_BYTES } from "../../../../lib/store-model";
 import { configSchema, productSchema, revision } from "../../../../lib/store-validation";
@@ -102,6 +102,13 @@ export async function POST(request: Request, { params }: Context) {
     if (!result.success) return error("Confira os dados do pedido.");
     const order = await writeOrderStatus(result.data.id, result.data.status);
     return order ? json({ order }) : error("Pedido indisponível.", 404);
+  }
+
+  if (action === "remove-order") {
+    const result = z.object({ id: z.uuid() }).safeParse(payload);
+    if (!result.success) return error("Selecione um pedido.");
+    const deleted = await deleteOrder(result.data.id);
+    return deleted === null ? error("Não foi possível apagar o pedido. Tente novamente.", 503) : json({ deleted });
   }
 
   if (action === "remove-plaque-reference") {

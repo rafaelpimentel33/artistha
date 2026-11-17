@@ -21,7 +21,7 @@ Para ativar o painel pela primeira vez, crie a conta que será administradora e 
 3. Publique a função em `supabase/functions/shop-registration/index.ts` como `shop-registration`. A função valida a chave da aplicação, por isso usa a configuração `verify_jwt = false`. Faça uma chamada POST com `{"action":"initialize"}` e o cabeçalho `x-shop-registration-key` para preparar o bucket de fotos.
 4. Configure `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` e `SHOP_REGISTRATION_KEY` no projeto Vercel. A terceira variável é sensível. Use `STORE_URL` para indicar o domínio HTTPS público se ele mudar. Para desenvolvimento, preencha uma cópia de `.env.example` em `.env.local`.
 5. Instale as dependências com `npm ci` e rode `npm run build`. A Vercel usa o framework Next.js definido em `vercel.json`.
-6. Aplique `supabase/migrations/20261115172450_conta_email_e_cpf.sql` e configure o Auth e o SMTP como descrito acima.
+6. Aplique os arquivos em `supabase/migrations/` na ordem dos nomes e configure o Auth e o SMTP como descrito acima.
 
 ## Privacidade e indexação
 
@@ -34,3 +34,5 @@ Para ativar o painel pela primeira vez, crie a conta que será administradora e 
 Aplique `supabase/plaque-references.sql` e `supabase/store-purchases.sql` antes de publicar o código atualizado. Esses scripts atualizam as regras de envio e uso da imagem de referência conforme a opção **Placa personalizável**.
 
 Para ativar o cadastro por e-mail e CPF, aplique também a migração `20261115172450_conta_email_e_cpf.sql` antes de publicar. Confirme as URLs de autenticação e o SMTP.
+
+Para habilitar a exclusão de pedidos no painel, aplique `supabase/migrations/20261117144339_permitir_exclusao_de_pedidos.sql` antes de publicar.

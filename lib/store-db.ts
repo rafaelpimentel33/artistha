@@ -120,3 +120,9 @@ export async function writeOrderStatus(id: string, status: OrderStatus) {
   if (error) throw new Error("Não foi possível atualizar o pedido.");
   return data;
 }
+
+export async function deleteOrder(id: string): Promise<boolean | null> {
+  const { data, error } = await (await storeAuthClient()).from("shop_orders").delete().eq("id", id)
+    .select("id").maybeSingle<{ id: string }>();
+  return error ? null : data !== null;
+}
