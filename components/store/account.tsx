@@ -7,19 +7,25 @@ import { sendJson } from "../../lib/store-client";
 import { money, privacyPath } from "../../lib/store-model";
 import { orderStatus, type CustomerProfile, type Order } from "../../lib/order-model";
 
-export function SignOut({ report }: { report: (message: string) => void }) {
+export function SignOut({ report, label = "Sair", returnTo = "/conta" }: {
+  report: (message: string) => void;
+  label?: string;
+  returnTo?: "/conta" | "/conta?destino=admin";
+}) {
   const [busy, setBusy] = useState(false);
   async function exit() {
     setBusy(true);
     try {
       await sendJson("/api/auth/signout", {});
-      window.location.assign("/conta");
+      window.location.assign(returnTo);
     } catch (failure) {
       report((failure as Error).message);
       setBusy(false);
     }
   }
-  return <button className="button button-outline small" onClick={exit} disabled={busy}><LogOut size={16} /> Sair</button>;
+  return <button type="button" className="button button-outline small" onClick={exit} disabled={busy}>
+    <LogOut size={16} aria-hidden="true" /> {busy ? "Saindo…" : label}
+  </button>;
 }
 
 const date = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });

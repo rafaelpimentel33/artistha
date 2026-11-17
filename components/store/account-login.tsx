@@ -70,6 +70,9 @@ export function AccountLogin({ brand, destination, productReturn, notice, startR
   const [waiting, setWaiting] = useState<"confirmation" | "recovery" | null>(null);
   const registration = mode === "register";
   const login = mode === "login";
+  const adminLogin = destination === "admin";
+  const loginHint = adminLogin ? "Use a conta administradora. Se você já acessava o painel, digite o usuário e a senha que já usava."
+    : productReturn ? "Entre para anexar a referência da sua placa." : "Acesse seus dados e acompanhe seus pedidos.";
 
   function changeMode(next: Mode) {
     if (next === "login" && email) setIdentifier(email);
@@ -92,7 +95,7 @@ export function AccountLogin({ brand, destination, productReturn, notice, startR
         : registration ? { mode, email, emailConfirmation, password, passwordConfirmation } : { mode, email };
       await sendJson("/api/auth/session", data);
       if (login) {
-        window.location.assign(productReturn ?? (destination === "admin" ? "/admin" : destination === "checkout" ? "/produtos?carrinho=1" : "/conta"));
+        window.location.assign(productReturn ?? (adminLogin ? "/admin" : destination === "checkout" ? "/produtos?carrinho=1" : "/conta"));
         return;
       }
       setPassword("");
@@ -104,7 +107,8 @@ export function AccountLogin({ brand, destination, productReturn, notice, startR
   }
 
   const title = waiting === "confirmation" ? "Confirme seu e-mail" : waiting === "recovery" ? "Confira seu e-mail"
-    : registration ? "Criar conta" : mode === "recovery" ? "Recuperar senha" : mode === "resend" ? "Reenviar confirmação" : "Minha conta";
+    : registration ? "Criar conta" : mode === "recovery" ? "Recuperar senha" : mode === "resend" ? "Reenviar confirmação"
+    : adminLogin ? "Entrar no painel da loja" : "Minha conta";
   return <AccountEntry brand={brand} title={title} back={productReturn}>
     {waiting ? <>
       <div className="account-email-status" role="status">
@@ -118,12 +122,12 @@ export function AccountLogin({ brand, destination, productReturn, notice, startR
       </button>
       <button className="text-link" onClick={() => changeMode("login")}>Voltar para entrar</button>
     </> : <>
-      {(login || registration) && <div className="account-entry-modes" aria-label="Acesso à conta" role="group">
+      {!adminLogin && (login || registration) && <div className="account-entry-modes" aria-label="Acesso à conta" role="group">
         <button type="button" aria-pressed={login} onClick={() => changeMode("login")} disabled={busy}>Entrar</button>
         <button type="button" aria-pressed={registration} onClick={() => changeMode("register")} disabled={busy}>Criar conta</button>
       </div>}
       <p className="muted">{registration ? "Confirme seu e-mail para completar o cadastro com nome, CPF e telefone."
-        : login ? (productReturn ? "Entre para anexar a referência da sua placa." : "Acesse seus dados e acompanhe seus pedidos.")
+        : login ? loginHint
         : mode === "recovery" ? "Informe o e-mail confirmado no cadastro." : "Informe o e-mail usado para criar a conta."}</p>
       <form className="access-form" onSubmit={submit}>
         <fieldset className="bare-fieldset account-entry-fields" disabled={busy}>

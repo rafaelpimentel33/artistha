@@ -51,6 +51,19 @@ export function AdminSetup() {
   </div></main>;
 }
 
+export function AdminAccessDenied() {
+  const [failure, setFailure] = useState("");
+
+  return <main className="access-page"><section className="access-card" aria-labelledby="admin-access-title">
+    <LockKeyhole size={32} strokeWidth={1.5} aria-hidden="true" />
+    <h1 id="admin-access-title">Acesso ao painel</h1>
+    <p>Você está com uma conta de cliente. Para abrir o painel, entre com a conta administradora.</p>
+    <SignOut label="Trocar de conta" returnTo="/conta?destino=admin" report={setFailure} />
+    {failure && <p className="form-error" role="alert">{failure}</p>}
+    <a className="text-link" href="/conta"><ArrowLeft size={17} aria-hidden="true" /> Minha conta</a>
+  </section></main>;
+}
+
 export function Admin({ initial }: { initial: AdminData }) {
   const [tab, setTab] = useState<Tab>("products");
   const [products, setProducts] = useState(initial.products);
