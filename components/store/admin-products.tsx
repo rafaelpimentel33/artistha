@@ -9,22 +9,54 @@ import { Area, Field, MediaField, Numeric, OrderButtons, reorder, SettingsBox, T
 import { Photo } from "./store-ui";
 import { WoodenPlaque } from "./wooden-plaque";
 
-export function newProduct(): AdminProduct {
-  return { id: crypto.randomUUID(), slug: "", name: "", description: "", categories: [], images: [], price: 0, comparePrice: null, stock: null, variantNames: [], variants: [], tags: [], active: true, revision: 0 };
+function changeProductCategory(product: AdminProduct, id: string, checked: boolean): AdminProduct {
+  const categories = checked ? [...product.categories, id] : product.categories.filter((category) => category !== id);
+  const next = { ...product, categories };
+  if (!checked && (id === PLAQUE_CATEGORY || id === ROUND_PLAQUE_CATEGORY) && !isRoundPlaque({ categories })) {
+    return { ...next, preview: undefined };
+  }
+  if (checked && id === ROUND_PLAQUE_CATEGORY && !categories.includes(PLAQUE_CATEGORY) && !product.variantNames.length) {
+    return { ...next, variantNames: ["Tamanho"], variants: newPlaqueVariants() };
+  }
+  return next;
 }
 
-export function ProductsTable({ products, categories, open, create }: {
-  products: AdminProduct[]; categories: Category[]; open: (item: AdminProduct) => void; create: () => void;
+export function newProduct(category = ""): AdminProduct {
+  const product: AdminProduct = { id: crypto.randomUUID(), slug: "", name: "", description: "", categories: [], images: [], price: 0, comparePrice: null, stock: null, variantNames: [], variants: [], tags: [], active: true, revision: 0 };
+  return category ? changeProductCategory(product, category, true) : product;
+}
+
+const uncategorizedFilter = "_";
+
+export function ProductsTable({ products, categories, categoryFilter, onCategoryChange, open, create }: {
+  products: AdminProduct[]; categories: Category[]; categoryFilter: string; onCategoryChange: (id: string) => void;
+  open: (item: AdminProduct) => void; create: (category: string) => void;
 }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
-  const filtered = products.filter((product) => normalize(product.name).includes(normalize(search)));
+  const categoryIds = new Set(categories.map(({ id }) => id));
+  const selectedCategory = categoryIds.has(categoryFilter) ? categoryFilter : "";
+  const uncategorizedOnly = categoryFilter === uncategorizedFilter;
+  const searchTerm = normalize(search);
+  const filtered = products.filter((product) => {
+    if (!normalize(product.name).includes(searchTerm)) return false;
+    if (uncategorizedOnly) return !product.categories.some((id) => categoryIds.has(id));
+    return !selectedCategory || product.categories.includes(selectedCategory);
+  });
   const perPage = 20;
   const pages = Math.ceil(filtered.length / perPage);
   return <div className="admin-box">
     <div className="admin-list-tools">
-      <label className="admin-search"><Search size={18} /><input aria-label="Buscar no catálogo" placeholder="Buscar no catálogo" value={search} onChange={(event) => { setSearch(event.target.value); setPage(0); }} /></label>
-      <button className="button" onClick={create}><Plus size={18} /> Novo produto</button>
+      <label className="admin-search"><Search size={18} aria-hidden="true" /><input aria-label="Buscar no catálogo" placeholder="Buscar no catálogo" value={search} onChange={(event) => { setSearch(event.target.value); setPage(0); }} /></label>
+      <Field label="Categoria">
+        <select value={uncategorizedOnly ? uncategorizedFilter : selectedCategory}
+          onChange={(event) => { onCategoryChange(event.target.value); setPage(0); }}>
+          <option value="">Todas as categorias</option>
+          {categories.map(({ id, name }) => <option key={id} value={id}>{name}</option>)}
+          <option value={uncategorizedFilter}>Sem categoria</option>
+        </select>
+      </Field>
+      <button className="button" type="button" onClick={() => create(selectedCategory)}><Plus size={18} aria-hidden="true" /> Novo produto</button>
     </div>
     <p className="admin-count">{filtered.length} {filtered.length === 1 ? "produto" : "produtos"}</p>
     <div className="admin-table">
@@ -93,17 +125,7 @@ export function ProductEditor({ product, categories, storeColors, onSave, onRemo
   }
 
   function setCategory(id: string, checked: boolean) {
-    setDraft((previous) => {
-      const categories = checked ? [...previous.categories, id] : previous.categories.filter((value) => value !== id);
-      const next = { ...previous, categories };
-      if (!checked && (id === PLAQUE_CATEGORY || id === ROUND_PLAQUE_CATEGORY) && !isRoundPlaque({ categories })) {
-        return { ...next, preview: undefined };
-      }
-      if (checked && id === ROUND_PLAQUE_CATEGORY && !categories.includes(PLAQUE_CATEGORY) && !previous.variantNames.length) {
-        return { ...next, variantNames: ["Tamanho"], variants: newPlaqueVariants() };
-      }
-      return next;
-    });
+    setDraft((previous) => changeProductCategory(previous, id, checked));
   }
 
   function editVariant(id: string, change: Partial<Variant>) {
@@ -146,15 +168,18 @@ export function ProductEditor({ product, categories, storeColors, onSave, onRemo
   async function save(event: FormEvent) {
     event.preventDefault();
     if (uploading.length) return;
+    const { revision, ...item } = draft;
+    const availableCategories = item.categories.filter((id) => categories.some((category) => category.id === id));
+    if (!availableCategories.length) {
+      setStatus("Selecione pelo menos uma categoria.");
+      return;
+    }
     setBusy(true);
     setStatus("");
     try {
-      const { revision, ...item } = draft;
-      const availableCategories = item.categories.filter((id) => categories.some((category) => category.id === id));
-      const categorized = { ...item, categories: availableCategories };
       const response = await sendJson<{ product: AdminProduct }>("/api/manage/product", {
         revision, product: {
-          ...categorized, slug: slugify(item.slug || item.name), images,
+          ...item, categories: availableCategories, slug: slugify(item.slug || item.name), images,
         },
       });
       onSave(response.product);
@@ -180,6 +205,11 @@ export function ProductEditor({ product, categories, storeColors, onSave, onRemo
     </div>
     {status && <p className="admin-feedback form-error" role="alert">{status}</p>}
     <fieldset className="admin-stack bare-fieldset" disabled={busy}>
+      <SettingsBox title="Categoria do produto" help={categories.length ? "Selecione uma ou mais categorias." : "Cadastre uma categoria na seção Categorias do painel."}>
+        <div className="product-category-options" role="group" aria-label="Categorias do produto">
+          {categories.map(({ id, name }) => <Toggle key={id} label={name} checked={draft.categories.includes(id)} onChange={(checked) => setCategory(id, checked)} />)}
+        </div>
+      </SettingsBox>
       <SettingsBox title="Informações do produto">
         <Text label="Nome do produto" value={draft.name} onChange={(value) => update("name", value)} required />
         <div className="admin-grid">
@@ -190,11 +220,8 @@ export function ProductEditor({ product, categories, storeColors, onSave, onRemo
         </div>
         <Toggle label="Mostrar produto na loja" checked={draft.active} onChange={(value) => update("active", value)} />
       </SettingsBox>
-      <SettingsBox title="Categorias e seções">
+      <SettingsBox title="Seções da vitrine">
         <div className="admin-checks">
-          {categories.map((category) => <Toggle key={category.id} label={category.name} checked={draft.categories.includes(category.id)} onChange={(checked) => setCategory(category.id, checked)} />)}
-        </div>
-        <div className="admin-checks separated">
           {tags.map(({ id, name }) => <Toggle key={id} label={name} checked={draft.tags.includes(id)} onChange={(checked) => update("tags", checked ? [...draft.tags, id] : draft.tags.filter((tag) => tag !== id))} />)}
         </div>
       </SettingsBox>

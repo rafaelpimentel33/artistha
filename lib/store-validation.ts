@@ -57,7 +57,7 @@ export const configSchema = z.object({
 });
 
 export const productSchema = z.object({
-  id, slug, name: required(150), categories: z.array(slug).max(30), description: copy(7000),
+  id, slug, name: required(150), categories: z.array(slug).min(1, "Selecione pelo menos uma categoria.").max(30), description: copy(7000),
   images: z.array(image.refine(Boolean)).max(12), price: moneyCents, comparePrice: moneyCents.nullable(), stock,
   variantNames: z.array(required(50)).max(3),
   variants: z.array(z.object({ id, values: z.array(required(120)).min(1).max(3), price: moneyCents.nullable(), stock, active: z.boolean() })).max(250),

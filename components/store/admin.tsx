@@ -70,6 +70,7 @@ export function Admin({ initial }: { initial: AdminData }) {
   const [config, setConfig] = useState(initial.config);
   const [revision, setRevision] = useState(initial.revision);
   const [savedCategories, setSavedCategories] = useState(initial.config.categories);
+  const [productCategoryFilter, setProductCategoryFilter] = useState("");
   const [editing, setEditing] = useState<AdminProduct | null>(null);
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -152,7 +153,8 @@ export function Admin({ initial }: { initial: AdminData }) {
         </div>}
         {tab === "products" && (editing
           ? <ProductEditor key={editing.id} product={editing} categories={savedCategories} storeColors={config} onSave={saved} onRemove={removed} onClose={() => setEditing(null)} />
-          : <ProductsTable products={products} categories={savedCategories} open={open} create={() => open(newProduct())} />)}
+          : <ProductsTable products={products} categories={savedCategories} categoryFilter={productCategoryFilter} onCategoryChange={setProductCategoryFilter}
+            open={open} create={(category) => open(newProduct(category))} />)}
         {settingsTab && <fieldset disabled={busy} className="bare-fieldset"><Settings tab={tab} config={config} products={products} update={update} /></fieldset>}
         {tab === "orders" && <AdminOrders />}
         {tab === "plaque-references" && <AdminPlaqueReferences />}
